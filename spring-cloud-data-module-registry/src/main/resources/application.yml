@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    data:
+      registry:
+        contents:
+          "source:time": org.springframework.cloud.stream.module:time-source:1.0.0.BUILD-SNAPSHOT
+          "sink:log":    org.springframework.cloud.stream.module:log-sink:1.0.0.BUILD-SNAPSHOT

@@ -16,15 +16,15 @@
 
 package org.springframework.cloud.data.rest.config;
 
-import static org.springframework.hateoas.config.EnableHypermediaSupport.HypermediaType.HAL;
+import static org.springframework.hateoas.config.EnableHypermediaSupport.HypermediaType.*;
 
 import java.util.List;
 
 import org.springframework.cloud.data.module.deployer.ModuleDeployer;
 import org.springframework.cloud.data.module.deployer.lattice.ReceptorModuleDeployer;
 import org.springframework.cloud.data.module.deployer.local.LocalModuleDeployer;
+import org.springframework.cloud.data.module.registry.EnvironmentModuleRegistry;
 import org.springframework.cloud.data.module.registry.ModuleRegistry;
-import org.springframework.cloud.data.module.registry.StubModuleRegistry;
 import org.springframework.cloud.data.rest.repository.InMemoryStreamDefinitionRepository;
 import org.springframework.cloud.data.rest.repository.StreamDefinitionRepository;
 import org.springframework.cloud.stream.module.launcher.ModuleLauncher;
@@ -84,7 +84,12 @@ public class AdminConfiguration {
 
 	@Bean
 	public ModuleRegistry moduleRegistry() {
-		return new StubModuleRegistry();
+		return new EnvironmentModuleRegistry();
+	}
+
+	@Bean
+	public EnvironmentModuleRegistry.Settings registrySettings() {
+		return new EnvironmentModuleRegistry.Settings();
 	}
 
 	@Bean
