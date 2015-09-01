@@ -32,6 +32,14 @@ interface CloudControllerRestClient {
 	CreateApplicationResponse createApplication(CreateApplicationRequest request);
 
 	/**
+	 * Create a new route in the given space and domain.
+	 * @param request the structure carrying all necessary parameters
+	 * @return a Response instance carrying all the response values expected
+	 * @throws org.springframework.web.client.RestClientException in the event of failure
+	 */
+	CreateRouteResponse createRoute(CreateRouteRequest request);
+
+	/**
 	 * Creates a service binding to an application (given its id).
 	 * @param request the structure carrying all necessary parameters
 	 * @return a Response instance carrying all the response values expected
@@ -86,6 +94,14 @@ interface CloudControllerRestClient {
 	 * @throws org.springframework.web.client.RestClientException in the event of failure
 	 */
 	ListServiceInstancesResponse listServiceInstances(ListServiceInstancesRequest request);
+
+	/**
+	 * Lists all shared domains.
+	 * @param request the structure carrying all necessary parameters
+	 * @return a Response instance carrying all the response values expected
+	 * @throws org.springframework.web.client.RestClientException in the event of failure
+	 */
+	ListSharedDomainsResponse listSharedDomains(ListSharedDomainsRequest request);
 
 	/**
 	 * Lists all the known spaces (with their ids) in a given organization (given by id).

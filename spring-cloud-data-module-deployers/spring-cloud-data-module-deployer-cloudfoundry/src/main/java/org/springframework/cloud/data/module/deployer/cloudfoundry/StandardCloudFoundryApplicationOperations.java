@@ -34,9 +34,12 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 
 	private final String spaceId;
 
-	StandardCloudFoundryApplicationOperations(CloudControllerRestClient client, String organizationName, String spaceName) {
+	private final String domainId;
+
+	StandardCloudFoundryApplicationOperations(CloudControllerRestClient client, String organizationName, String spaceName, String domain) {
 		this.client = client;
-		this.spaceId = getSpaceId(client, organizationName, spaceName);
+		this.spaceId = getSpaceId(organizationName, spaceName);
+		this.domainId = getDomainId(domain);
 	}
 
 	@Override
@@ -116,6 +119,7 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 	public PushBindAndStartApplicationResults pushBindAndStartApplication(PushBindAndStartApplicationParameters parameters) {
 		PushBindAndStartApplicationResults pushResponse = new PushBindAndStartApplicationResults();
 
+		// Create app
 		CreateApplicationRequest createRequest = new CreateApplicationRequest()
 				.withSpaceId(this.spaceId)
 				.withName(parameters.getName())
@@ -130,6 +134,7 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 			return pushResponse.withError(PushBindAndStartApplicationResults.Error.CREATE_FAILED);
 		}
 
+		// Bind service instances
 		for (String serviceInstanceName : parameters.getServiceInstanceNames()) {
 			ListServiceInstancesRequest listServiceInstancesRequest = new ListServiceInstancesRequest()
 					.withName(serviceInstanceName)
@@ -143,6 +148,15 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 			}
 		}
 
+		// Create and map route
+		CreateRouteRequest createRouteRequest = new CreateRouteRequest()
+				.withDomainId(this.domainId)
+				.withSpaceId(this.spaceId)
+				//.withHost(parameters.getName())
+				;
+		CreateRouteResponse createRouteResponse = this.client.createRoute(createRouteRequest);
+
+		// Upload the bits for the app
 		UploadBitsRequest uploadBitsRequest = new UploadBitsRequest()
 				.withId(createResponse.getMetadata().getId())
 				.withResource(parameters.getResource());
@@ -152,6 +166,7 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 			return pushResponse.withError(PushBindAndStartApplicationResults.Error.UPLOAD_FAILED);
 		}
 
+		// Start the app
 		UpdateApplicationRequest updateRequest = new UpdateApplicationRequest()
 				.withId(createResponse.getMetadata().getId())
 				.withState("STARTED");
@@ -163,16 +178,31 @@ class StandardCloudFoundryApplicationOperations implements CloudFoundryApplicati
 		return pushResponse.withError(PushBindAndStartApplicationResults.Error.NONE);
 	}
 
-	private static String getSpaceId(CloudControllerRestClient client, String organizationName, String spaceName) {
+	private String getSpaceId(String organizationName, String spaceName) {
 		ListOrganizationsRequest organizationsRequest = new ListOrganizationsRequest()
 				.withName(organizationName);
 
-		String orgId = client.listOrganizations(organizationsRequest).getResources().get(0).getMetadata().getId();
+		String orgId = this.client.listOrganizations(organizationsRequest).getResources().get(0).getMetadata().getId();
 
 		ListSpacesRequest spacesRequest = new ListSpacesRequest()
 				.withOrgId(orgId)
 				.withName(spaceName);
 
-		return client.listSpaces(spacesRequest).getResources().get(0).getMetadata().getId();
+		return this.client.listSpaces(spacesRequest).getResources().get(0).getMetadata().getId();
 	}
+
+	private String getDomainId(String domain) {
+		ListSharedDomainsRequest sharedDomainsRequest = new ListSharedDomainsRequest()
+				.withName(domain);
+
+		ListSharedDomainsResponse listSharedDomainsResponse = this.client.listSharedDomains(sharedDomainsRequest);
+		for (ResourceResponse<NamedEntity> response : listSharedDomainsResponse.getResources()) {
+			if (response.getEntity().getName().equals(domain)) {
+				return response.getMetadata().getId();
+			}
+		}
+		return null;
+	}
+
+
 }

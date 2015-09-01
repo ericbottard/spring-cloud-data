@@ -50,6 +50,15 @@ class StandardCloudControllerRestClient implements CloudControllerRestClient {
 	}
 
 	@Override
+	public CreateRouteResponse createRoute(CreateRouteRequest request) {
+		URI uri = UriComponentsBuilder.fromUri(this.endpoint)
+				.pathSegment("v2", "routes")
+				.build().toUri();
+
+		return this.restOperations.postForObject(uri, request, CreateRouteResponse.class);
+	}
+
+	@Override
 	public CreateServiceBindingResponse createServiceBinding(CreateServiceBindingRequest request) {
 		URI uri = UriComponentsBuilder.fromUri(this.endpoint)
 				.pathSegment("v2", "service_bindings")
@@ -121,6 +130,18 @@ class StandardCloudControllerRestClient implements CloudControllerRestClient {
 		URI uri = uriComponentsBuilder.build().toUri();
 
 		return this.restOperations.getForObject(uri, ListServiceInstancesResponse.class);
+	}
+
+	@Override
+	public ListSharedDomainsResponse listSharedDomains(ListSharedDomainsRequest request) {
+		UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder.fromUri(this.endpoint)
+				.pathSegment("v2", "shared_domains");
+		if (!StringUtils.isEmpty(request.getName())) {
+			uriComponentsBuilder.queryParam("q", "name:" + request.getName());
+		}
+		URI uri = uriComponentsBuilder.build().toUri();
+
+		return this.restOperations.getForObject(uri, ListSharedDomainsResponse.class);
 	}
 
 	@Override
