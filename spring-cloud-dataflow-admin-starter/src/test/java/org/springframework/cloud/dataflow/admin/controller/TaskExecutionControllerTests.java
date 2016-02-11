@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,11 +30,11 @@ import java.util.Date;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.dataflow.admin.configuration.TestDependencies;
 import org.springframework.cloud.task.repository.TaskExecution;
 import org.springframework.cloud.task.repository.dao.TaskExecutionDao;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -64,15 +63,10 @@ public class TaskExecutionControllerTests {
 	@Autowired
 	private TaskExecutionDao dao;
 
-	@Autowired
-	private TaskExecutionController controller;
-
 	private MockMvc mockMvc;
 
 	@Autowired
 	private WebApplicationContext wac;
-
-	@Autowired private ApplicationContext applicationContext;
 
 	@Before
 	public void setupMockMVC() {
@@ -97,14 +91,14 @@ public class TaskExecutionControllerTests {
 	public void testGetExecutionNotFound() throws Exception{
 		mockMvc.perform(
 				get("/tasks/executions/1345345345345").accept(MediaType.APPLICATION_JSON)
-		).andExpect(status().is5xxServerError());
+		).andExpect(status().isNotFound());
 	}
 
 	@Test
 	public void testGetExecution() throws Exception{
 		mockMvc.perform(
 				get("/tasks/executions/0").accept(MediaType.APPLICATION_JSON)
-		).andExpect(status().isOk()).andDo(print()).andExpect(content().json("{taskName: \"" +
+		).andExpect(status().isOk()).andExpect(content().json("{taskName: \"" +
 				TASK_NAME_ORIG + "\"}"));
 	}
 
@@ -112,7 +106,7 @@ public class TaskExecutionControllerTests {
 	public void testGetAllExecutions() throws Exception{
 		mockMvc.perform(
 				get("/tasks/executions/").accept(MediaType.APPLICATION_JSON)
-		).andExpect(status().isOk()).andDo(print())
+		).andExpect(status().isOk())
 				.andExpect(jsonPath("$.content[*].executionId",
 						containsInAnyOrder(3, 2, 1, 0)))
 				.andExpect(jsonPath("$.content", hasSize(4)));
@@ -122,7 +116,7 @@ public class TaskExecutionControllerTests {
 	public void testGetExecutionsByName() throws Exception{
 		mockMvc.perform(
 				get("/tasks/executions/").param("name", TASK_NAME_ORIG).accept(MediaType.APPLICATION_JSON)
-		).andExpect(status().isOk()).andDo(print())
+		).andExpect(status().isOk())
 				.andExpect(jsonPath("$.content[0].taskName", is(TASK_NAME_ORIG)))
 				.andExpect(jsonPath("$.content[1].taskName", is(TASK_NAME_ORIG)))
 				.andExpect(jsonPath("$.content", hasSize(2)));
@@ -131,7 +125,7 @@ public class TaskExecutionControllerTests {
 	public void testGetExecutionsByNameNotFound() throws Exception{
 		mockMvc.perform(
 				get("/tasks/executions/").param("name", "BAZ").accept(MediaType.APPLICATION_JSON)
-		).andExpect(status().isOk()).andDo(print())
+		).andExpect(status().isOk())
 				.andExpect(jsonPath("$.content", hasSize(0)));
 	}
 }
