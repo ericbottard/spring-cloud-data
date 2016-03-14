@@ -25,7 +25,6 @@ import javax.sql.DataSource;
 
 import org.h2.tools.Server;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.metrics.repository.MetricRepository;
 import org.springframework.boot.actuate.metrics.repository.redis.RedisMetricRepository;
@@ -45,12 +44,15 @@ import org.springframework.cloud.dataflow.server.controller.StreamDefinitionCont
 import org.springframework.cloud.dataflow.server.repository.InMemoryStreamDefinitionRepository;
 import org.springframework.cloud.dataflow.server.repository.InMemoryTaskDefinitionRepository;
 import org.springframework.cloud.dataflow.server.repository.StreamDefinitionRepository;
-import org.springframework.cloud.dataflow.server.repository.TaskDatabaseInitializer;
 import org.springframework.cloud.dataflow.server.repository.TaskDefinitionRepository;
 import org.springframework.cloud.stream.module.metrics.FieldValueCounterRepository;
 import org.springframework.cloud.stream.module.metrics.RedisFieldValueCounterRepository;
 import org.springframework.cloud.task.repository.TaskExplorer;
-import org.springframework.cloud.task.repository.support.JdbcTaskExplorerFactoryBean;
+import org.springframework.cloud.task.repository.support.SimpleTaskExplorer;
+import org.springframework.cloud.task.repository.support.TaskExecutionDaoFactoryBean;
+import org.springframework.cloud.task.repository.support.TaskRepositoryInitializer;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -78,6 +80,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
  * @author Janne Valkealahti
  * @author Glenn Renfro
  * @author Josh Long
+ * @author Michael Minella
  */
 @Configuration
 @EnableHypermediaSupport(type = HAL)
@@ -166,9 +169,8 @@ public class DataFlowServerConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TaskExplorer taskExplorer(DataSource dataSource) {
-		JdbcTaskExplorerFactoryBean factoryBean = new JdbcTaskExplorerFactoryBean(dataSource);
-		return factoryBean.getObject();
+	public TaskExplorer taskExplorer(ConfigurableApplicationContext context) {
+		return new SimpleTaskExplorer(new TaskExecutionDaoFactoryBean(context));
 	}
 
 	@Bean(destroyMethod = "stop")
@@ -188,14 +190,18 @@ public class DataFlowServerConfiguration {
 
 	@Bean
 	@ConditionalOnExpression("#{'!${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
-	public TaskDatabaseInitializer taskDatabaseInitializerForDB(DataSource dataSource) {
-		return new TaskDatabaseInitializer(dataSource);
+	public TaskRepositoryInitializer taskRepositoryInitializerForDB(DataSource dataSource) {
+		TaskRepositoryInitializer taskRepositoryInitializer = new TaskRepositoryInitializer();
+		taskRepositoryInitializer.setDataSource(dataSource);
+		return taskRepositoryInitializer;
 	}
 
 	@Bean
 	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
-	public TaskDatabaseInitializer taskDatabaseInitializerForDefaultDB(DataSource dataSource, Server server) {
-		return new TaskDatabaseInitializer(dataSource);
+	public TaskRepositoryInitializer taskRepositoryInitializerForDefaultDB(DataSource dataSource, Server server) {
+		TaskRepositoryInitializer taskRepositoryInitializer = new TaskRepositoryInitializer();
+		taskRepositoryInitializer.setDataSource(dataSource);
+		return taskRepositoryInitializer;
 	}
 
 	private String getH2Port(String url) {
