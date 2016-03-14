@@ -30,10 +30,8 @@ import java.util.Date;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.dataflow.server.configuration.TestDependencies;
-import org.springframework.cloud.task.repository.TaskExecution;
 import org.springframework.cloud.task.repository.dao.TaskExecutionDao;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -59,6 +57,7 @@ public class TaskExecutionControllerTests {
 
 	private final static String TASK_NAME_FOOBAR = BASE_TASK_NAME + "_FOOBAR";
 
+	private static boolean initialized = false;
 
 	@Autowired
 	private TaskExecutionDao dao;
@@ -72,14 +71,13 @@ public class TaskExecutionControllerTests {
 	public void setupMockMVC() {
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(wac).defaultRequest(
 				get("/").accept(MediaType.APPLICATION_JSON)).build();
-		dao.saveTaskExecution(new TaskExecution(0, 0, TASK_NAME_ORIG, new Date(),
-				new Date(), null, new ArrayList<String>()));
-		dao.saveTaskExecution(new TaskExecution(1, 0, TASK_NAME_ORIG, new Date(),
-				new Date(), null, new ArrayList<String>()));
-		dao.saveTaskExecution(new TaskExecution(2, 0, TASK_NAME_FOO, new Date(),
-				new Date(), null, new ArrayList<String>()));
-		dao.saveTaskExecution(new TaskExecution(3, 0, TASK_NAME_FOOBAR, new Date(),
-				new Date(), null, new ArrayList<String>()));
+		if (!initialized) {
+			dao.createTaskExecution(TASK_NAME_ORIG, new Date(), new ArrayList<String>());
+			dao.createTaskExecution(TASK_NAME_ORIG, new Date(), new ArrayList<String>());
+			dao.createTaskExecution(TASK_NAME_FOO, new Date(), new ArrayList<String>());
+			dao.createTaskExecution(TASK_NAME_FOOBAR, new Date(), new ArrayList<String>());
+			initialized = true;
+		}
 	}
 
 	@Test(expected = IllegalArgumentException.class)

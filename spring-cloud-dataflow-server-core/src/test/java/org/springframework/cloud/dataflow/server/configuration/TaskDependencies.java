@@ -19,8 +19,10 @@ package org.springframework.cloud.dataflow.server.configuration;
 import javax.sql.DataSource;
 
 import org.springframework.cloud.task.repository.TaskExplorer;
-import org.springframework.cloud.task.repository.support.JdbcTaskExplorerFactoryBean;
+import org.springframework.cloud.task.repository.support.SimpleTaskExplorer;
+import org.springframework.cloud.task.repository.support.TaskExecutionDaoFactoryBean;
 import org.springframework.cloud.task.repository.support.TaskRepositoryInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -41,9 +43,8 @@ public class TaskDependencies {
 	}
 
 	@Bean
-	public TaskExplorer taskExplorer(DataSource dataSource) {
-		JdbcTaskExplorerFactoryBean factoryBean = new JdbcTaskExplorerFactoryBean(dataSource);
-		return factoryBean.getObject();
+	public TaskExplorer taskExplorer(ConfigurableApplicationContext context) {
+		return new SimpleTaskExplorer(new TaskExecutionDaoFactoryBean(context));
 	}
 
 }

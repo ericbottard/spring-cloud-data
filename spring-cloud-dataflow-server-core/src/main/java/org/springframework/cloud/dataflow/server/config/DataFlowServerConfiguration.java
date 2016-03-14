@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.metrics.repository.MetricRepository;
 import org.springframework.boot.actuate.metrics.repository.redis.RedisMetricRepository;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -169,8 +170,26 @@ public class DataFlowServerConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TaskExplorer taskExplorer(ConfigurableApplicationContext context) {
-		return new SimpleTaskExplorer(new TaskExecutionDaoFactoryBean(context));
+	public TaskExplorer taskExplorer(TaskExecutionDaoFactoryBean daoFactoryBean) {
+		TaskExplorer taskExplorer = null;
+		try {
+			taskExplorer = new SimpleTaskExplorer(daoFactoryBean);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
+		return taskExplorer;
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
+	public TaskExecutionDaoFactoryBean taskExecutionDaoFactoryBeanForServer(ConfigurableApplicationContext context, Server server){
+		return new TaskExecutionDaoFactoryBean(context);
+	}
+	@Bean
+	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
+	public TaskExecutionDaoFactoryBean taskExecutionDaoFactoryBean(ConfigurableApplicationContext context){
+		return new TaskExecutionDaoFactoryBean(context);
 	}
 
 	@Bean(destroyMethod = "stop")

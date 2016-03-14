@@ -38,6 +38,8 @@ import org.springframework.cloud.task.repository.TaskExplorer;
 import org.springframework.cloud.task.repository.dao.MapTaskExecutionDao;
 import org.springframework.cloud.task.repository.dao.TaskExecutionDao;
 import org.springframework.cloud.task.repository.support.SimpleTaskExplorer;
+import org.springframework.cloud.task.repository.support.TaskExecutionDaoFactoryBean;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -118,13 +120,12 @@ public class TestDependencies extends WebMvcConfigurationSupport {
 	}
 
 	@Bean
-	public TaskExplorer taskExplorer(TaskExecutionDao dao){
-		return new SimpleTaskExplorer(dao);
+	public TaskExplorer taskExplorer(TaskExecutionDaoFactoryBean daoFactoryBean){
+		return new SimpleTaskExplorer(daoFactoryBean);
 	}
 
 	@Bean
-	public TaskExecutionDao taskExecutionDao(){
-		return new MapTaskExecutionDao();
+	public TaskExecutionDaoFactoryBean taskExecutionDaoFactoryBean(ConfigurableApplicationContext context){
+		return new TaskExecutionDaoFactoryBean(context);
 	}
-
 }
