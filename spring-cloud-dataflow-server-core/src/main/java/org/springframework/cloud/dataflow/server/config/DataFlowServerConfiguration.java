@@ -25,16 +25,23 @@ import javax.sql.DataSource;
 
 import org.h2.tools.Server;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.admin.service.SimpleJobServiceFactoryBean;
+import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.metrics.repository.MetricRepository;
 import org.springframework.boot.actuate.metrics.repository.redis.RedisMetricRepository;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.batch.BatchDatabaseInitializer;
+import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.security.oauth2.OAuth2AutoConfiguration;
 import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.dataflow.artifact.registry.ArtifactRegistry;
 import org.springframework.cloud.dataflow.artifact.registry.RedisArtifactRegistry;
 import org.springframework.cloud.dataflow.completion.CompletionConfiguration;
@@ -46,13 +53,13 @@ import org.springframework.cloud.dataflow.server.repository.InMemoryStreamDefini
 import org.springframework.cloud.dataflow.server.repository.InMemoryTaskDefinitionRepository;
 import org.springframework.cloud.dataflow.server.repository.StreamDefinitionRepository;
 import org.springframework.cloud.dataflow.server.repository.TaskDefinitionRepository;
+import org.springframework.cloud.dataflow.server.repository.TaskJobExecutionRepository;
 import org.springframework.cloud.stream.module.metrics.FieldValueCounterRepository;
 import org.springframework.cloud.stream.module.metrics.RedisFieldValueCounterRepository;
 import org.springframework.cloud.task.repository.TaskExplorer;
 import org.springframework.cloud.task.repository.support.SimpleTaskExplorer;
 import org.springframework.cloud.task.repository.support.TaskExecutionDaoFactoryBean;
 import org.springframework.cloud.task.repository.support.TaskRepositoryInitializer;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -63,6 +70,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -92,6 +100,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 		StreamDefinitionRepository.class
 })
 @EnableAutoConfiguration(exclude = OAuth2AutoConfiguration.class)
+@EnableConfigurationProperties(BatchProperties.class)
 public class DataFlowServerConfiguration {
 
 	protected static final org.slf4j.Logger logger = LoggerFactory.getLogger(DataFlowServerConfiguration.class);
@@ -171,14 +180,12 @@ public class DataFlowServerConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public TaskExplorer taskExplorer(TaskExecutionDaoFactoryBean daoFactoryBean) {
-		TaskExplorer taskExplorer = null;
 		try {
-			taskExplorer = new SimpleTaskExplorer(daoFactoryBean);
+			return new SimpleTaskExplorer(daoFactoryBean);
 		}
 		catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
-		return taskExplorer;
 	}
 
 	@Bean
@@ -190,6 +197,91 @@ public class DataFlowServerConfiguration {
 	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
 	public TaskExecutionDaoFactoryBean taskExecutionDaoFactoryBean(ConfigurableApplicationContext context){
 		return new TaskExecutionDaoFactoryBean(context);
+	}
+
+	@Bean
+	public TaskJobExecutionRepository taskJobExecutionRepository(){
+		return new TaskJobExecutionRepository();
+	}
+
+	@Bean
+	public SimpleJobServiceFactoryBean simpleJobServiceFactoryBean(DataSource dataSource,
+			JobRepositoryFactoryBean repositoryFactoryBean,
+			JobExplorerFactoryBean explorerFactoryBean,
+			DataSourceTransactionManager transactionManager) {
+		SimpleJobServiceFactoryBean factoryBean = new SimpleJobServiceFactoryBean();
+		factoryBean.setDataSource(dataSource);
+		try {
+			factoryBean.setJobRepository(repositoryFactoryBean.getObject());
+			factoryBean.setJobLocator(new MapJobRegistry());
+			factoryBean.setJobLauncher(new SimpleJobLauncher());
+			factoryBean.setJobExplorer(explorerFactoryBean.getObject());
+			factoryBean.setTransactionManager(transactionManager);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
+		return factoryBean;
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
+	public JobRepositoryFactoryBean jobRepositoryFactoryBeanForServer(DataSource dataSource, Server server, DataSourceTransactionManager dataSourceTransactionManager){
+		JobRepositoryFactoryBean repositoryFactoryBean = new JobRepositoryFactoryBean();
+		repositoryFactoryBean.setDataSource(dataSource);
+		repositoryFactoryBean.setTransactionManager(dataSourceTransactionManager);
+		return repositoryFactoryBean;
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
+	public DataSourceTransactionManager transactionManagerForServer(DataSource dataSource, Server server){
+		return new DataSourceTransactionManager(dataSource);
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
+	public JobExplorerFactoryBean jobExplorerFactoryBeanForServer(DataSource dataSource, Server server){
+		JobExplorerFactoryBean jobExplorerFactoryBean = new JobExplorerFactoryBean();
+		jobExplorerFactoryBean.setDataSource(dataSource);
+		return jobExplorerFactoryBean;
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && '${spring.datasource.url:}'.contains('/mem:')}")
+	public BatchDatabaseInitializer batchRepositoryInitializerForDefaultDBForServer(DataSource dataSource, Server server) {
+		return new BatchDatabaseInitializer();
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
+	public JobRepositoryFactoryBean jobRepositoryFactoryBean(DataSource dataSource, DataSourceTransactionManager dataSourceTransactionManager){
+		JobRepositoryFactoryBean repositoryFactoryBean = new JobRepositoryFactoryBean();
+		repositoryFactoryBean.setDataSource(dataSource);
+		repositoryFactoryBean.setTransactionManager(dataSourceTransactionManager);
+		return repositoryFactoryBean;
+	}
+
+
+	@Bean
+	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
+	public JobExplorerFactoryBean jobExplorerFactoryBean(DataSource dataSource){
+		JobExplorerFactoryBean jobExplorerFactoryBean = new JobExplorerFactoryBean();
+		jobExplorerFactoryBean.setDataSource(dataSource);
+		return jobExplorerFactoryBean;
+	}
+
+	@Bean
+	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
+	public DataSourceTransactionManager transactionManager(DataSource dataSource){
+		return new DataSourceTransactionManager(dataSource);
+	}
+
+
+	@Bean
+	@ConditionalOnExpression("#{!'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:') && !'${spring.datasource.url:}'.contains('/mem:')}")
+	public BatchDatabaseInitializer batchRepositoryInitializerForDefaultDB(DataSource dataSource) {
+		return new BatchDatabaseInitializer();
 	}
 
 	@Bean(destroyMethod = "stop")

@@ -40,6 +40,7 @@ import org.springframework.cloud.task.repository.TaskExplorer;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -50,6 +51,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration(classes = {TaskDependencies.class,
 		EmbeddedDataSourceConfiguration.class,
 		PropertyPlaceholderAutoConfiguration.class})
+@DirtiesContext
 public class TaskExecutionExplorerTests {
 	@Autowired
 	private DataSource dataSource;
