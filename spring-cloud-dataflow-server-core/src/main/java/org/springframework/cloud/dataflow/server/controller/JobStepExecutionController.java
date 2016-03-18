@@ -10,8 +10,6 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.launch.NoSuchJobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.dataflow.rest.resource.StepExecutionResource;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.ExposesResourceFor;
 import org.springframework.hateoas.mvc.ResourceAssemblerSupport;
 import org.springframework.http.HttpStatus;
@@ -30,8 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @ExposesResourceFor(StepExecutionResource.class)
 public class JobStepExecutionController {
 
-	private static final Long DEFAULT_STEP_ID = null;
-	private JobService jobService;
+	private final JobService jobService;
 
 	private final Assembler stepAssembler = new Assembler();
 
@@ -57,16 +54,8 @@ public class JobStepExecutionController {
 	@RequestMapping(value = { "" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public List<StepExecutionResource> stepExecutions(
-			@PathVariable("jobExecutionId") Long id,
-			Pageable pageable,
-			PagedResourcesAssembler<StepExecution> assembler) {
-		List<StepExecution> result;
-		try {
-			result = new ArrayList<StepExecution>(jobService.getStepExecutions(id));
-		}
-		catch (NoSuchJobExecutionException e) {
-			result = new ArrayList<StepExecution>();
-		}
+			@PathVariable("jobExecutionId") long id) throws NoSuchJobExecutionException {
+		List<StepExecution> result = new ArrayList<>(jobService.getStepExecutions(id));
 		return stepAssembler.toResources(result);
 	}
 
@@ -80,10 +69,8 @@ public class JobStepExecutionController {
 	@RequestMapping(value = { "/{stepExecutionId}" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public StepExecutionResource getStepExecution(
-			@PathVariable("jobExecutionId") Long id,
-			@PathVariable("stepExecutionId") Long stepId,
-			Pageable pageable,
-			PagedResourcesAssembler<StepExecution> assembler) throws
+			@PathVariable("jobExecutionId") long id,
+			@PathVariable("stepExecutionId") long stepId) throws
 			NoSuchStepExecutionException, NoSuchJobExecutionException {
 		return stepAssembler.toResource(jobService.getStepExecution(id, stepId));
 	}

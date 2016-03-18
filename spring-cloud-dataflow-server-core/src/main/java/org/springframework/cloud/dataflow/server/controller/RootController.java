@@ -95,10 +95,8 @@ public class RootController {
 		resourceSupport.add(new Link(templated).withRel("jobs/executions/name"));
 		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkToSingleResource(JobExecutionResource.class, "{id}").withRel("jobs/executions/execution")));
 
-//		templated = entityLinks.linkToCollectionResource(StepExecutionResource.class).getHref();
-//		resourceSupport.add(new Link(templated).withRel("jobs/executions/{jobExecutionId}/steps"));
-		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkToSingleResource(StepExecutionResource.class, "{jobExecutionId}").withRel("jobs/executions/{jobExecutionId}/steps")));
-		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkToSingleResource(StepExecutionResource.class, "{stepId}").withRel("jobs/executions/{jobExecutionId}/steps")));
+		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkFor(StepExecutionResource.class, "{jobExecutionId}").withRel("jobs/executions/execution/steps")));
+		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkFor(StepExecutionResource.class, "{jobExecutionId}").slash("{stepId}").withRel("jobs/executions/execution/steps/step")));
 
 		resourceSupport.add(entityLinks.linkToCollectionResource(CounterResource.class).withRel("counters"));
 		resourceSupport.add(unescapeTemplateVariables(entityLinks.linkToSingleResource(CounterResource.class, "{name}").withRel("counters/counter")));
