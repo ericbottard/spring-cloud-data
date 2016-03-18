@@ -19,7 +19,6 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Glenn Renfro
  */
 @RestController
-@RequestMapping("/jobs/executions/steps")
+@RequestMapping("/jobs/executions/{jobExecutionId}/steps")
 @ExposesResourceFor(StepExecutionResource.class)
 public class JobStepExecutionController {
 
@@ -55,7 +54,7 @@ public class JobStepExecutionController {
 	 * @param id the {@link JobExecution}.
 	 * @return Collection of {@link StepExecutionResource} for the given jobExecutionId
 	 */
-	@RequestMapping(value = { "/{jobExecutionId}" }, method = RequestMethod.GET)
+	@RequestMapping(value = { "" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public List<StepExecutionResource> stepExecutions(
 			@PathVariable("jobExecutionId") Long id,
@@ -78,11 +77,11 @@ public class JobStepExecutionController {
 	 * @param stepId the {@link StepExecution} id.
 	 * @return Collection of {@link StepExecutionResource} for the given jobExecutionId
 	 */
-	@RequestMapping(value = { "/step" }, method = RequestMethod.GET)
+	@RequestMapping(value = { "/{stepExecutionId}" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public StepExecutionResource getStepExecution(
-			@RequestParam("jobExecutionId") Long id,
-			@RequestParam(value = "stepExecutionId") Long stepId,
+			@PathVariable("jobExecutionId") Long id,
+			@PathVariable("stepExecutionId") Long stepId,
 			Pageable pageable,
 			PagedResourcesAssembler<StepExecution> assembler) throws
 			NoSuchStepExecutionException, NoSuchJobExecutionException {

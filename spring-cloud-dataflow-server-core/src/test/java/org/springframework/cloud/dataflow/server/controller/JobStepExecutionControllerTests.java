@@ -141,14 +141,14 @@ public class JobStepExecutionControllerTests {
 	@Test
 	public void testGetExecutionNotFound() throws Exception {
 		mockMvc.perform(
-				get("/jobs/executions/steps/1342434234").accept(MediaType.APPLICATION_JSON)
+				get("/jobs/executions/1342434234/steps").accept(MediaType.APPLICATION_JSON)
 		).andExpect(jsonPath("$", hasSize(0)));
 	}
 
 	@Test
 	public void testSingleGetStepExecution() throws Exception {
 		mockMvc.perform(
-				get("/jobs/executions/steps/step?jobExecutionId=1&stepExecutionId=1").accept(MediaType.APPLICATION_JSON)
+				get("/jobs/executions/1/steps/1").accept(MediaType.APPLICATION_JSON)
 		).andExpect(status().isOk()).andExpect(content().json("{jobExecutionId: " +
 				1 + "}"));
 	}
@@ -156,7 +156,7 @@ public class JobStepExecutionControllerTests {
 	@Test
 	public void testGetMultipleStepExecutions() throws Exception {
 		mockMvc.perform(
-				get("/jobs/executions/steps/3").accept(MediaType.APPLICATION_JSON)
+				get("/jobs/executions/3/steps").accept(MediaType.APPLICATION_JSON)
 		).andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(3)))
 				.andExpect(jsonPath("$[0].stepExecutionId", is(4)))
