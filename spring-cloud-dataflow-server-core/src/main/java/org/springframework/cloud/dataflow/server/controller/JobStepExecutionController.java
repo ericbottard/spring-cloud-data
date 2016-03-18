@@ -1,6 +1,7 @@
 package org.springframework.cloud.dataflow.server.controller;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.batch.admin.service.JobService;
 import org.springframework.batch.admin.service.NoSuchStepExecutionException;
@@ -9,18 +10,16 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.launch.NoSuchJobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.dataflow.rest.resource.StepExecutionResource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.ExposesResourceFor;
-import org.springframework.hateoas.PagedResources;
 import org.springframework.hateoas.mvc.ResourceAssemblerSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,10 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Glenn Renfro
  */
 @RestController
-@RequestMapping("/jobs/executions/{jobExecutionId}/steps")
+@RequestMapping("/jobs/executions/steps")
 @ExposesResourceFor(StepExecutionResource.class)
 public class JobStepExecutionController {
 
+	private static final Long DEFAULT_STEP_ID = null;
 	private JobService jobService;
 
 	private final Assembler stepAssembler = new Assembler();
@@ -55,39 +55,39 @@ public class JobStepExecutionController {
 	 * @param id the {@link JobExecution}.
 	 * @return Collection of {@link StepExecutionResource} for the given jobExecutionId
 	 */
-	@RequestMapping(value = { "" }, method = RequestMethod.GET)
+	@RequestMapping(value = { "/{jobExecutionId}" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
-	public PagedResources<StepExecutionResource> list(
-			@PathVariable("jobExecutionId") long id, Pageable pageable,
+	public List<StepExecutionResource> stepExecutions(
+			@PathVariable("jobExecutionId") Long id,
+			Pageable pageable,
 			PagedResourcesAssembler<StepExecution> assembler) {
-		Page page = null;
-		try{
-			page = new PageImpl<>(new ArrayList<StepExecution>(jobService.getStepExecutions(id)), pageable,
-					jobService.getStepExecutions(id).size());
-		}catch (NoSuchJobExecutionException e){
-			page = new PageImpl<>(new ArrayList<StepExecutionResource>());
+		List<StepExecution> result;
+		try {
+			result = new ArrayList<StepExecution>(jobService.getStepExecutions(id));
 		}
-		return assembler.toResource(page, stepAssembler);
+		catch (NoSuchJobExecutionException e) {
+			result = new ArrayList<StepExecution>();
+		}
+		return stepAssembler.toResources(result);
 	}
 
 	/**
-	 * List all step executions.
+	 * Retrieve a specific {@link StepExecutionResource}.
 	 *
 	 * @param id the {@link JobExecution} id.
-	 * @param stepId the {@ling StepExecution} id.
-	 * @return a {@link StepExecutionResource} for the given jobExecutionId and
-	 * stepExecutionId
+	 * @param stepId the {@link StepExecution} id.
+	 * @return Collection of {@link StepExecutionResource} for the given jobExecutionId
 	 */
-	@RequestMapping(value = { "/{stepId}" }, method = RequestMethod.GET)
+	@RequestMapping(value = { "/step" }, method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
-	public StepExecutionResource view(
-			@PathVariable("jobExecutionId") long id, @PathVariable("stepId") long stepId,Pageable pageable,
-			PagedResourcesAssembler<StepExecution> assembler) throws NoSuchStepExecutionException, NoSuchJobExecutionException {
-		Page page = null;
-		StepExecution stepExecution = jobService.getStepExecution(id,stepId);
-		return stepAssembler.toResource(stepExecution);
+	public StepExecutionResource getStepExecution(
+			@RequestParam("jobExecutionId") Long id,
+			@RequestParam(value = "stepExecutionId") Long stepId,
+			Pageable pageable,
+			PagedResourcesAssembler<StepExecution> assembler) throws
+			NoSuchStepExecutionException, NoSuchJobExecutionException {
+		return stepAssembler.toResource(jobService.getStepExecution(id, stepId));
 	}
-
 
 	/**
 	 * {@link org.springframework.hateoas.ResourceAssembler} implementation
@@ -101,7 +101,7 @@ public class JobStepExecutionController {
 
 		@Override
 		public StepExecutionResource toResource(StepExecution stepExecution) {
-			return createResourceWithId(stepExecution.getJobExecution().getId(), stepExecution);
+			return createResourceWithId(stepExecution.getId(), stepExecution, stepExecution.getJobExecution().getId());
 		}
 
 		@Override
