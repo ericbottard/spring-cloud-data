@@ -17,8 +17,11 @@
 package org.springframework.cloud.dataflow.rest.client;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.JobExecution;
@@ -36,6 +39,7 @@ import org.springframework.cloud.dataflow.rest.client.support.JobParametersJacks
 import org.springframework.cloud.dataflow.rest.client.support.StepExecutionHistoryJacksonMixIn;
 import org.springframework.cloud.dataflow.rest.client.support.StepExecutionJacksonMixIn;
 import org.springframework.cloud.dataflow.rest.job.StepExecutionHistory;
+import org.springframework.cloud.dataflow.rest.resource.AppStatusResource;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.ResourceSupport;
 import org.springframework.hateoas.UriTemplate;
@@ -298,6 +302,34 @@ public class DataFlowTemplate implements DataFlowOperations {
 	 */
 	public RestTemplate getRestTemplate() {
 		return restTemplate;
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		int i = 1;
+		DataFlowTemplate dataFlowTemplate = new DataFlowTemplate(URI.create("http://eric-dataflow-server.cfapps.io"));
+		while (true) {
+			System.out.println("Attempt " + i++);
+			dataFlowTemplate.streamOperations().deploy("oomygod", Collections.<String, String>emptyMap());
+			Set<String> statuses;
+			do {
+				statuses = new HashSet<>();
+				for (AppStatusResource appStatusResource : dataFlowTemplate.runtimeOperations().status()) {
+					statuses.add(appStatusResource.getState());
+				}
+				Thread.sleep(3000L);
+				System.out.println(i + " Waiting for =='deployed' " + statuses);
+			} while (!statuses.equals(Collections.singleton("deployed")));
+
+			dataFlowTemplate.streamOperations().undeploy("oomygod");
+			do {
+				statuses = new HashSet<>();
+				for (AppStatusResource appStatusResource : dataFlowTemplate.runtimeOperations().status()) {
+					statuses.add(appStatusResource.getState());
+				}
+				Thread.sleep(5000L);
+				System.out.println(i + " Waiting for empty " + statuses);
+			} while (!statuses.isEmpty());
+		}
 	}
 
 }
