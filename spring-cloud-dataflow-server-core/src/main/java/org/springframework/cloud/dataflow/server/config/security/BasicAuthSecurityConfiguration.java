@@ -15,6 +15,8 @@
  */
 package org.springframework.cloud.dataflow.server.config.security;
 
+import static org.springframework.cloud.dataflow.server.controller.UiController.dashboard;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.cloud.dataflow.server.config.security.support.OnSecurityEnabledAndOAuth2Disabled;
@@ -75,7 +77,7 @@ public class BasicAuthSecurityConfiguration extends WebSecurityConfigurerAdapter
 				contentNegotiationStrategy,
 				MediaType.TEXT_HTML);
 
-		final String loginPage = UiController.WEB_UI_INDEX_PAGE_ROUTE + "/#/login";
+		final String loginPage = dashboard("/#/login");
 
 		final BasicAuthenticationEntryPoint basicAuthenticationEntryPoint = new BasicAuthenticationEntryPoint();
 		basicAuthenticationEntryPoint.setRealmName(securityProperties.getBasic().getRealm());
@@ -88,17 +90,18 @@ public class BasicAuthSecurityConfiguration extends WebSecurityConfigurerAdapter
 			.antMatchers("/")
 			.authenticated()
 			.antMatchers(
-					UiController.WEB_UI_INDEX_PAGE_ROUTE + "/**",
+					dashboard("/**"),
 					"/authenticate",
 					"/security/info",
 					"/features",
 					"/assets/**").permitAll()
 		.and()
 			.formLogin().loginPage(loginPage)
-			.loginProcessingUrl(UiController.WEB_UI_INDEX_PAGE_ROUTE + "/login")
-			.defaultSuccessUrl(UiController.WEB_UI_INDEX_PAGE_ROUTE + "/").permitAll()
+			.loginProcessingUrl(dashboard("/login"))
+			.defaultSuccessUrl(dashboard("/")).permitAll()
 		.and()
-			.logout().logoutUrl(UiController.WEB_UI_INDEX_PAGE_ROUTE + "/logout").logoutSuccessUrl(UiController.WEB_UI_INDEX_PAGE_ROUTE + "/logout-success.html")
+			.logout().logoutUrl(dashboard("/logout"))
+				.logoutSuccessUrl(dashboard("/logout-success.html"))
 			.logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler()).permitAll()
 		.and().httpBasic()
 			.and().exceptionHandling()

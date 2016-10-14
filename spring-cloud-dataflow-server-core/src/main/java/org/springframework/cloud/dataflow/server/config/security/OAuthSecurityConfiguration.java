@@ -15,9 +15,10 @@
  */
 package org.springframework.cloud.dataflow.server.config.security;
 
+import static org.springframework.cloud.dataflow.server.controller.UiController.dashboard;
+
 import org.springframework.boot.autoconfigure.security.oauth2.client.EnableOAuth2Sso;
 import org.springframework.cloud.dataflow.server.config.security.support.OnSecurityEnabledAndOAuth2Enabled;
-import org.springframework.cloud.dataflow.server.controller.UiController;
 import org.springframework.cloud.dataflow.server.service.impl.ManualOAuthAuthenticationProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -26,7 +27,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.util.StringUtils;
 
 /**
  * Setup Spring Security OAuth for the Rest Endpoints of Spring Cloud Data Flow.
@@ -45,21 +45,19 @@ public class OAuthSecurityConfiguration extends WebSecurityConfigurerAdapter {
 		http.antMatcher("/**")
 		.authorizeRequests()
 			.antMatchers(
-					"/security/info**", "/login**", StringUtils.arrayToCommaDelimitedString(appendIndexPageRoute("/logout-success-oauth.html",
-							"/styles/**", "/images/**", "/fonts/**", "/lib/**"))).permitAll()
+					"/security/info**",
+					"/login**",
+					dashboard("/logout-success-oauth.html"),
+					dashboard("/styles/**"),
+					dashboard("/images/**"),
+					dashboard("/fonts/**"),
+					dashboard("/lib/**")
+
+					).permitAll()
 			.anyRequest().authenticated()
 		.and().httpBasic()
-		.and().logout().logoutSuccessUrl(UiController.WEB_UI_INDEX_PAGE_ROUTE + "/logout-success-oauth.html")
+		.and().logout().logoutSuccessUrl(dashboard("/logout-success-oauth.html"))
 		.and().csrf().disable();
-	}
-
-	private String[] appendIndexPageRoute(String... patterns) {
-		String[] appendedResult = new String[patterns.length];
-		int i = 0;
-		for (String pattern: patterns) {
-			appendedResult[i] = UiController.WEB_UI_INDEX_PAGE_ROUTE + pattern;
-		}
-		return appendedResult;
 	}
 
 	@Override
