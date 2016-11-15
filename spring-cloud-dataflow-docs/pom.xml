@@ -168,7 +168,7 @@
 									<backend>pdf</backend>
 									<sourceHighlighter>rouge</sourceHighlighter>
 									<attributes>
-										<pdf-stylesdir>${project.basedir}/src/main/asciidoc/pdf-theme</pdf-stylesdir>
+										<pdf-stylesdir>${project.basedir}/src/main/asciidoc-pdf-theme</pdf-stylesdir>
 										<pdf-style>custom</pdf-style>
 										<icons>font</icons>
 										<pagenums />
@@ -216,16 +216,13 @@
 								</goals>
 								<configuration>
 									<target>
-										<copy file="${project.build.directory}/generated-docs/index.pdf" tofile="${project.build.directory}/contents/reference/pdf/spring-cloud-dataflow-reference.pdf" />
-										<copy todir="${project.build.directory}/contents/reference/html">
-											<fileset dir="${project.build.directory}/generated-docs/">
-												<include name="**/*.html" />
-												<include name="images/**" />
-											</fileset>
-										</copy>
 										<zip destfile="${project.build.directory}/${project.artifactId}-${project.version}.zip">
 											<zipfileset src="${project.build.directory}/${project.artifactId}-${project.version}-javadoc.jar" prefix="api" />
-											<fileset dir="${project.build.directory}/contents" />
+											<zipfileset dir="${project.build.directory}/generated-docs" includes="index.pdf" fullpath="reference/pdf/spring-cloud-dataflow-reference.pdf" />
+											<zipfileset dir="${project.build.directory}/generated-docs" prefix="reference/html">
+												<include name="index.html" />
+												<include name="images/**" />
+											</zipfileset>
 										</zip>
 									</target>
 								</configuration>
