@@ -7,7 +7,7 @@ jdk:
   - oraclejdk8
 install: true
 script:
-  - '[ "${TRAVIS_PULL_REQUEST}" != "false" ] || ./mvnw cobertura:cobertura package -Pfull -U -Dmaven.test.redirectTestOutputToFile=true'
+  - '[ "${TRAVIS_PULL_REQUEST}" != "false" ] || ./mvnw -pl spring-cloud-dataflow-core cobertura:cobertura package -Pfull -U -Dmaven.test.redirectTestOutputToFile=true'
   - '[ "${TRAVIS_PULL_REQUEST}"  = "false" ] || ./mvnw -pl spring-cloud-dataflow-core cobertura:cobertura package -Pfull -U -Dmaven.test.redirectTestOutputToFile=true'
 
 after_success:
