@@ -153,10 +153,10 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<configuration>
-					<destFile>${sonar.jacoco.reportPath}</destFile>
-					<append>true</append>
-				</configuration>
+				<!--<configuration>-->
+					<!--<destFile>${sonar.jacoco.reportPath}</destFile>-->
+					<!--<append>true</append>-->
+				<!--</configuration>-->
 				<executions>
 					<execution>
 						<id>agent</id>
