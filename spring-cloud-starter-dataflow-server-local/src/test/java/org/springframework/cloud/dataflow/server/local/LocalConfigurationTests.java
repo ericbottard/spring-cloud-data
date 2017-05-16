@@ -71,7 +71,7 @@ public class LocalConfigurationTests {
 		SpringApplication app = new SpringApplication(LocalTestDataFlowServer.class);
 		int randomPort = SocketUtils.findAvailableTcpPort();
 		String dataSourceUrl = String.format("jdbc:h2:tcp://localhost:%s/mem:dataflow", randomPort);
-		context = app.run(new String[] { "--server.port=0", "--spring.datasource.url=" + dataSourceUrl });
+		context = app.run(new String[] { "--server.port=-1", "--spring.datasource.url=" + dataSourceUrl });
 		assertThat(context.containsBean(APP_DEPLOYER_BEAN_NAME), is(true));
 		assertThat(context.getBean(APP_DEPLOYER_BEAN_NAME), instanceOf(LocalAppDeployer.class));
 		assertThat(context.containsBean(TASK_LAUNCHER_BEAN_NAME), is(true));
@@ -82,7 +82,7 @@ public class LocalConfigurationTests {
 	@Test
 	public void testLocalAutoConfigApplied() throws Exception {
 		SpringApplication app = new SpringApplication(LocalTestDataFlowServer.class);
-		context = app.run(new String[] { "--server.port=0" });
+		context = app.run(new String[] { "--server.port=-1" });
 
 		// default on DataFlowControllerAutoConfiguration only adds maven,
 		// LocalDataFlowServerAutoConfiguration also adds docker so test on those.
@@ -96,7 +96,7 @@ public class LocalConfigurationTests {
 	@Test
 	public void testConfigWithStreamsDisabled() {
 		SpringApplication app = new SpringApplication(LocalTestDataFlowServer.class);
-		context = app.run(new String[] { "--server.port=0",
+		context = app.run(new String[] { "--server.port=-1",
 				"--" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.STREAMS_ENABLED + "=false" });
 		assertNotNull(context.getBean(TaskDefinitionRepository.class));
 		assertNotNull(context.getBean(DeploymentIdRepository.class));
@@ -112,7 +112,7 @@ public class LocalConfigurationTests {
 	@Test
 	public void testConfigWithTasksDisabled() {
 		SpringApplication app = new SpringApplication(LocalTestDataFlowServer.class);
-		context = app.run(new String[] { "--server.port=0",
+		context = app.run(new String[] { "--server.port=-1",
 				"--" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.TASKS_ENABLED + "=false" });
 		assertNotNull(context.getBean(StreamDefinitionRepository.class));
 		assertNotNull(context.getBean(DeploymentIdRepository.class));
@@ -128,7 +128,7 @@ public class LocalConfigurationTests {
 	@Test
 	public void testConfigWithAnalyticsDisabled() {
 		SpringApplication app = new SpringApplication(LocalTestDataFlowServer.class);
-		context = app.run(new String[] { "--server.port=0",
+		context = app.run(new String[] { "--server.port=-1",
 				"--" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.ANALYTICS_ENABLED + "=false" });
 		;
 		assertNotNull(context.getBean(StreamDefinitionRepository.class));
@@ -145,7 +145,7 @@ public class LocalConfigurationTests {
 	@Test
 	public void testNoDataflowConfig() {
 		SpringApplication app = new SpringApplication(LocalTestNoDataFlowServer.class);
-		context = app.run(new String[] { "--server.port=0" });
+		context = app.run(new String[] { "--server.port=-1" });
 		// we still have deployer beans
 		assertThat(context.containsBean(APP_DEPLOYER_BEAN_NAME), is(true));
 		assertThat(context.containsBean(TASK_LAUNCHER_BEAN_NAME), is(true));
